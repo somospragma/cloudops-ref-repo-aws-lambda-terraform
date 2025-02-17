@@ -15,7 +15,7 @@ Consulta CHANGELOG.md para la lista de cambios de cada versión. *Recomendamos e
 El módulo cuenta con la siguiente estructura:
 
 ```bash
-cloudops-ref-repo-aws-rds-terraform/
+cloudops-ref-repo-aws-lambda-terraform/
 └── sample/
     ├── data.tf
     ├── main.tf
