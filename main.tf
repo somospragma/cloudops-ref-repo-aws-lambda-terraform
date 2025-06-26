@@ -166,7 +166,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
   for_each = var.lambda_functions
 
   name              = local.log_group_names[each.key]
-  retention_in_days = var.log_retention_days
+  retention_in_days = each.value.log_retention_days
   kms_key_id       = each.value.lambda_kms_key_arn
 
   # Sistema de etiquetado simplificado para Log Groups
