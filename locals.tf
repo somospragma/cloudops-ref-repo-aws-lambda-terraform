@@ -26,6 +26,6 @@ locals {
 
   # Generate standard names for log groups using map key: /aws/lambda/{map_key}
   log_group_names = {
-    for k, v in var.lambda_functions : k => "/aws/lambda/${var.client}-${var.project}-${var.environment}-${k}"
+    for k, v in var.lambda_functions : k => "/aws/lambda/${var.client}-${var.project}-${var.environment}-lambda-${k}"
   }
 }
