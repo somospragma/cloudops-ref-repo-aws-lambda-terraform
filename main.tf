@@ -135,9 +135,59 @@ resource "aws_lambda_function" "s3_functions" {
   }
 }
 
-###########################################
-#          Permission Resources           #
-###########################################
+# Create Lambda functions - type = "ecr"
+resource "aws_lambda_function" "ecr_functions" {
+  provider = aws.project
+  for_each = {
+    for name, config in var.lambda_functions : name => config
+    if config.type == "ecr"
+  }
+
+  function_name = local.lambda_function_names[each.key]
+  description   = each.value.description
+  role         = each.value.lambda_iam_role_arn
+  memory_size  = each.value.memory_size
+  timeout      = each.value.timeout
+  package_type = "Image"
+
+  image_uri = each.value.image_uri
+
+  # Environment variables
+  dynamic "environment" {
+    for_each = length(each.value.environment_variables) > 0 ? [1] : []
+    content {
+      variables = each.value.environment_variables
+    }
+  }
+
+  # KMS encryption for environment variables
+  kms_key_arn = each.value.lambda_kms_key_arn
+
+  # VPC configuration
+  dynamic "vpc_config" {
+    for_each = each.value.vpc_config != null ? [each.value.vpc_config] : []
+    content {
+      subnet_ids         = vpc_config.value.subnet_ids
+      security_group_ids = vpc_config.value.security_group_ids
+    }
+  }
+
+  # Sistema de etiquetado
+  tags = merge(
+    {
+      Name = local.lambda_function_names[each.key]
+    },
+    each.value.additional_tags
+  )
+
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_logs
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 # Create Lambda permissions
 resource "aws_lambda_permission" "permissions" {
@@ -152,7 +202,8 @@ resource "aws_lambda_permission" "permissions" {
 
   depends_on = [
     aws_lambda_function.directory_functions,
-    aws_lambda_function.s3_functions
+    aws_lambda_function.s3_functions,
+    aws_lambda_function.ecr_functions
   ]
 }
 

@@ -8,7 +8,7 @@ Para más detalles sobre los cambios y versiones, consulte el [CHANGELOG.md](./C
 
 ## ✅ Características
 
-- ✅ Soporte para múltiples tipos de fuente (directory, s3)
+- ✅ Soporte para múltiples tipos de fuente (directory, s3, ecr)
 - ✅ Compresión automática de código fuente
 - ✅ Gestión automática de CloudWatch Log Groups
 - ✅ Configuración flexible de permisos y políticas
@@ -102,7 +102,7 @@ lambda_functions = {
     timeout     = 30
     
     # Tipo de fuente
-    type = "directory"  # directory, s3
+    type = "ecr"  # directory, s3, ecr
     
     # Para type = "directory"
     source_path = "./src/lambda"
@@ -111,6 +111,9 @@ lambda_functions = {
     s3_bucket        = "bucket-name"
     s3_key           = "path/to/function.zip"
     source_code_hash = "sha256-hash"
+    
+    # Para type = "ecr"
+    image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-lambda:latest"
     
     # Variables de entorno
     environment_variables = {
@@ -242,7 +245,40 @@ module "lambda_functions" {
 }
 ```
 
-## Escenarios de Uso Comunes
+#### Ejemplo 3: Función con Imagen ECR
+
+```hcl
+module "lambda_functions" {
+  source = "./modules/lambda"
+  
+  client      = "pragma"
+  project     = "genai"
+  environment = "dev"
+  
+  lambda_functions = {
+    ml_processor = {
+      name        = "pragma-genai-dev-ml-processor"
+      description = "ML processing function using container image"
+      memory_size = 1024
+      timeout     = 300
+      
+      type      = "ecr"
+      image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/ml-processor:latest"
+      
+      environment_variables = {
+        MODEL_PATH = "/opt/ml/model"
+        LOG_LEVEL  = "INFO"
+      }
+      
+      lambda_iam_role_arn = aws_iam_role.ml_lambda_role.arn
+      additional_tags = {
+        Purpose = "ml-processing"
+        Team    = "data-science"
+      }
+    }
+  }
+}
+```
 
 ### 1. API Backend
 - Funciones para endpoints REST

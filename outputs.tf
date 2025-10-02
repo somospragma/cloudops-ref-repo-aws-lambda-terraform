@@ -97,5 +97,6 @@ output "summary" {
     function_names  = values(local.all_lambda_functions)[*].function_name
     directory_functions = keys(aws_lambda_function.directory_functions)
     s3_functions = keys(aws_lambda_function.s3_functions)
+    ecr_functions = keys(aws_lambda_function.ecr_functions)
   }
 }

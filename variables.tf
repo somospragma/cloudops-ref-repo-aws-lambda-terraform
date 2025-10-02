@@ -12,7 +12,7 @@ variable "lambda_functions" {
     memory_size = optional(number, 128)
     timeout     = optional(number, 30)
     
-    # Source Configuration - Tipo: directory o s3
+    # Source Configuration - Tipo: directory, s3, o ecr
     type = string
     
     # Para type = "directory"
@@ -22,6 +22,9 @@ variable "lambda_functions" {
     s3_bucket        = optional(string, "")
     s3_key           = optional(string, "")
     source_code_hash = optional(string, "")
+    
+    # Para type = "ecr"
+    image_uri = optional(string, "")
     
     # Environment Variables
     environment_variables = optional(map(string), {})
@@ -56,9 +59,9 @@ variable "lambda_functions" {
   
   validation {
     condition = alltrue([
-      for k, v in var.lambda_functions : contains(["directory", "s3"], v.type)
+      for k, v in var.lambda_functions : contains(["directory", "s3", "ecr"], v.type)
     ])
-    error_message = "Lambda function type must be one of: directory, s3"
+    error_message = "Lambda function type must be one of: directory, s3, ecr"
   }
   
   validation {
