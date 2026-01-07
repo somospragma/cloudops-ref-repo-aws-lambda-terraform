@@ -114,7 +114,7 @@ output "lambda_function_urls" {
     for k, v in aws_lambda_function_url.function_urls : k => {
       function_url = v.function_url
       url_id      = v.url_id
-      creation_time = v.creation_time
+      #creation_time = v.creation_time
     }
   }
 }
