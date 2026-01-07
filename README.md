@@ -17,6 +17,8 @@ Para más detalles sobre los cambios y versiones, consulte el [CHANGELOG.md](./C
 - ✅ Integración con Lambda Layers externos
 - ✅ Cifrado KMS para variables de entorno
 - ✅ Sistema de etiquetado consistente
+- ✅ Publicación automática de versiones Lambda
+- ✅ Configuración de Function URLs con CORS
 
 ## Estructura del Módulo
 
@@ -77,6 +79,7 @@ El módulo aplica tags automáticamente siguiendo la estrategia corporativa:
 - `aws_lambda_function`: Funciones Lambda
 - `aws_cloudwatch_log_group`: Grupos de logs CloudWatch
 - `aws_lambda_permission`: Permisos de invocación
+- `aws_lambda_function_url`: URLs de función Lambda
 - `data.archive_file`: Compresión automática de código fuente
 
 ### Parámetros de Entrada
@@ -146,6 +149,22 @@ lambda_functions = {
       security_group_ids = ["sg-12345"]
     }
     
+    # Configuración de versioning
+    publish_version = true
+    
+    # Configuración de Function URL
+    function_url = {
+      authorization_type = "NONE"  # o "AWS_IAM"
+      cors = {
+        allow_credentials = false
+        allow_headers     = ["content-type", "x-amz-date"]
+        allow_methods     = ["GET", "POST"]
+        allow_origins     = ["https://example.com"]
+        expose_headers    = ["date"]
+        max_age          = 86400
+      }
+    }
+    
     # Tags adicionales
     additional_tags = {
       Purpose = "api-handler"
@@ -162,6 +181,7 @@ lambda_functions = {
 | <a name="output_lambda_function_arns"></a> [lambda_function_arns](#output_lambda_function_arns) | ARNs de todas las funciones Lambda creadas |
 | <a name="output_lambda_function_names"></a> [lambda_function_names](#output_lambda_function_names) | Nombres de todas las funciones Lambda creadas |
 | <a name="output_lambda_function_invoke_arns"></a> [lambda_function_invoke_arns](#output_lambda_function_invoke_arns) | ARNs de invocación para API Gateway |
+| <a name="output_lambda_function_urls"></a> [lambda_function_urls](#output_lambda_function_urls) | URLs de función Lambda creadas |
 | <a name="output_log_group_names"></a> [log_group_names](#output_log_group_names) | Nombres de los grupos de logs CloudWatch |
 
 ### Ejemplos de Uso
@@ -245,7 +265,60 @@ module "lambda_functions" {
 }
 ```
 
-#### Ejemplo 3: Función con Imagen ECR
+#### Ejemplo 3: Función con Function URL y Versioning
+
+```hcl
+module "lambda_functions" {
+  source = "./modules/lambda"
+  
+  client      = "pragma"
+  project     = "genai"
+  environment = "dev"
+  
+  lambda_functions = {
+    public_api = {
+      name        = "pragma-genai-dev-public-api"
+      description = "Public API with Function URL"
+      handler     = "index.handler"
+      runtime     = "nodejs22.x"
+      memory_size = 256
+      timeout     = 30
+      
+      type        = "directory"
+      source_path = "./src/public-api"
+      
+      # Enable versioning
+      publish_version = true
+      
+      # Configure Function URL with CORS
+      function_url = {
+        authorization_type = "NONE"
+        cors = {
+          allow_credentials = false
+          allow_headers     = ["content-type", "authorization"]
+          allow_methods     = ["GET", "POST", "OPTIONS"]
+          allow_origins     = ["https://myapp.com", "https://localhost:3000"]
+          expose_headers    = ["x-request-id"]
+          max_age          = 300
+        }
+      }
+      
+      environment_variables = {
+        NODE_ENV = "production"
+        CORS_ENABLED = "true"
+      }
+      
+      lambda_iam_role_arn = aws_iam_role.public_api_role.arn
+      additional_tags = {
+        Purpose = "public-api"
+        Exposure = "public"
+      }
+    }
+  }
+}
+```
+
+#### Ejemplo 4: Función con Imagen ECR
 
 ```hcl
 module "lambda_functions" {
@@ -264,6 +337,9 @@ module "lambda_functions" {
       
       type      = "ecr"
       image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/ml-processor:latest"
+      
+      # Enable versioning for container-based functions
+      publish_version = true
       
       environment_variables = {
         MODEL_PATH = "/opt/ml/model"

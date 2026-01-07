@@ -34,6 +34,7 @@ resource "aws_lambda_function" "directory_functions" {
 
   filename         = data.archive_file.lambda_zip[each.key].output_path
   source_code_hash = data.archive_file.lambda_zip[each.key].output_base64sha256
+  publish          = each.value.publish_version
 
   # Layers - Usa ARNs externos proporcionados
   layers = each.value.layer_arns
@@ -94,6 +95,7 @@ resource "aws_lambda_function" "s3_functions" {
   s3_bucket        = each.value.s3_bucket
   s3_key           = each.value.s3_key
   source_code_hash = each.value.source_code_hash
+  publish          = each.value.publish_version
 
   # Layers - Usa ARNs externos proporcionados
   layers = each.value.layer_arns
@@ -151,6 +153,7 @@ resource "aws_lambda_function" "ecr_functions" {
   package_type = "Image"
 
   image_uri = each.value.image_uri
+  publish   = each.value.publish_version
 
   # Environment variables
   dynamic "environment" {
@@ -228,4 +231,37 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
   lifecycle {
     create_before_destroy = true
   }
+}
+###########################################
+#           Function URLs                  #
+###########################################
+
+# Create Lambda Function URLs
+resource "aws_lambda_function_url" "function_urls" {
+  provider = aws.project
+  for_each = {
+    for name, config in var.lambda_functions : name => config
+    if config.function_url != null
+  }
+
+  function_name      = local.all_lambda_functions[each.key].function_name
+  authorization_type = each.value.function_url.authorization_type
+
+  dynamic "cors" {
+    for_each = each.value.function_url.cors != null ? [each.value.function_url.cors] : []
+    content {
+      allow_credentials = cors.value.allow_credentials
+      allow_headers     = cors.value.allow_headers
+      allow_methods     = cors.value.allow_methods
+      allow_origins     = cors.value.allow_origins
+      expose_headers    = cors.value.expose_headers
+      max_age          = cors.value.max_age
+    }
+  }
+
+  depends_on = [
+    aws_lambda_function.directory_functions,
+    aws_lambda_function.s3_functions,
+    aws_lambda_function.ecr_functions
+  ]
 }

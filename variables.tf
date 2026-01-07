@@ -53,6 +53,22 @@ variable "lambda_functions" {
     # CloudWatch Configuration
     log_retention_days = optional(number, 14)
     
+    # Versioning Configuration
+    publish_version = optional(bool, false)
+    
+    # Function URL Configuration
+    function_url = optional(object({
+      authorization_type = optional(string, "AWS_IAM")
+      cors = optional(object({
+        allow_credentials = optional(bool, false)
+        allow_headers     = optional(list(string), ["date", "keep-alive"])
+        allow_methods     = optional(list(string), ["*"])
+        allow_origins     = optional(list(string), ["*"])
+        expose_headers    = optional(list(string), ["date", "keep-alive"])
+        max_age          = optional(number, 86400)
+      }))
+    }))
+    
     # Etiquetas específicas de la función Lambda
     additional_tags = optional(map(string), {})
   }))

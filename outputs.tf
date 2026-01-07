@@ -21,6 +21,7 @@ output "lambda_functions" {
       log_group_arn     = aws_cloudwatch_log_group.lambda_logs[k].arn
       log_group_name    = aws_cloudwatch_log_group.lambda_logs[k].name
       source_type       = var.lambda_functions[k].type
+      function_url      = try(aws_lambda_function_url.function_urls[k].function_url, null)
     }
   }
 }
@@ -94,9 +95,26 @@ output "summary" {
     total_functions = length(local.all_lambda_functions)
     total_log_groups = length(aws_cloudwatch_log_group.lambda_logs)
     total_permissions = length(aws_lambda_permission.permissions)
+    total_function_urls = length(aws_lambda_function_url.function_urls)
     function_names  = values(local.all_lambda_functions)[*].function_name
     directory_functions = keys(aws_lambda_function.directory_functions)
     s3_functions = keys(aws_lambda_function.s3_functions)
     ecr_functions = keys(aws_lambda_function.ecr_functions)
+    function_urls = keys(aws_lambda_function_url.function_urls)
+  }
+}
+
+###########################################
+########## Function URLs ##################
+###########################################
+
+output "lambda_function_urls" {
+  description = "Lambda Function URLs"
+  value = {
+    for k, v in aws_lambda_function_url.function_urls : k => {
+      function_url = v.function_url
+      url_id      = v.url_id
+      creation_time = v.creation_time
+    }
   }
 }
