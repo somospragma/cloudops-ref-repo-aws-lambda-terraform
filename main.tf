@@ -32,6 +32,8 @@ resource "aws_lambda_function" "directory_functions" {
   memory_size  = each.value.memory_size
   timeout      = each.value.timeout
 
+  architectures = each.value.architectures
+
   filename         = data.archive_file.lambda_zip[each.key].output_path
   source_code_hash = data.archive_file.lambda_zip[each.key].output_base64sha256
   publish          = each.value.publish_version
@@ -56,6 +58,14 @@ resource "aws_lambda_function" "directory_functions" {
     content {
       subnet_ids         = vpc_config.value.subnet_ids
       security_group_ids = vpc_config.value.security_group_ids
+    }
+  }
+
+  # Ephemeral storage configuration
+  dynamic "ephemeral_storage" {
+    for_each = each.value.ephemeral_storage != null ? [each.value.ephemeral_storage] : []
+    content {
+      size = ephemeral_storage.value
     }
   }
 
@@ -92,6 +102,8 @@ resource "aws_lambda_function" "s3_functions" {
   memory_size  = each.value.memory_size
   timeout      = each.value.timeout
 
+  architectures = each.value.architectures
+
   s3_bucket        = each.value.s3_bucket
   s3_key           = each.value.s3_key
   source_code_hash = each.value.source_code_hash
@@ -117,6 +129,14 @@ resource "aws_lambda_function" "s3_functions" {
     content {
       subnet_ids         = vpc_config.value.subnet_ids
       security_group_ids = vpc_config.value.security_group_ids
+    }
+  }
+
+  # Ephemeral storage configuration
+  dynamic "ephemeral_storage" {
+    for_each = each.value.ephemeral_storage != null ? [each.value.ephemeral_storage] : []
+    content {
+      size = ephemeral_storage.value
     }
   }
 
@@ -152,8 +172,20 @@ resource "aws_lambda_function" "ecr_functions" {
   timeout      = each.value.timeout
   package_type = "Image"
 
+  architectures = each.value.architectures
+
   image_uri = each.value.image_uri
   publish   = each.value.publish_version
+
+  # Image Configuration (optional)
+  dynamic "image_config" {
+    for_each = each.value.image_config != null ? [each.value.image_config] : []
+    content {
+      entry_point       = length(image_config.value.entry_point) > 0 ? image_config.value.entry_point : null
+      command           = length(image_config.value.command) > 0 ? image_config.value.command : null
+      working_directory = image_config.value.working_directory != "" ? image_config.value.working_directory : null
+    }
+  }
 
   # Environment variables
   dynamic "environment" {
@@ -172,6 +204,14 @@ resource "aws_lambda_function" "ecr_functions" {
     content {
       subnet_ids         = vpc_config.value.subnet_ids
       security_group_ids = vpc_config.value.security_group_ids
+    }
+  }
+
+  # Ephemeral storage configuration
+  dynamic "ephemeral_storage" {
+    for_each = each.value.ephemeral_storage != null ? [each.value.ephemeral_storage] : []
+    content {
+      size = ephemeral_storage.value
     }
   }
 
