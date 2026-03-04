@@ -5,9 +5,9 @@
 locals {
   # Merge all Lambda functions from all resources (only if they exist)
   all_lambda_functions = merge(
-    try(aws_lambda_function.directory_functions, {}),
-    try(aws_lambda_function.s3_functions, {}),
-    try(aws_lambda_function.ecr_functions, {})
+    aws_lambda_function.directory_functions,
+    aws_lambda_function.s3_functions,
+    aws_lambda_function.ecr_functions
   )
 
   # Flatten permissions from all functions with unique keys
